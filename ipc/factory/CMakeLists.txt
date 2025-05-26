@@ -10,4 +10,6 @@ target_include_directories(ipc_factory PUBLIC
 target_link_libraries(ipc_factory
     PUBLIC ipc_base
            ipc_pipe
+           ipc_shared_memory
+           ipc_socket
 )
