@@ -9,6 +9,7 @@ include(FetchContent)
 set(TEST_SOURCES
   test_main.cxx
   test_pipe.cxx
+  test_shared_memory.cxx
 )
 
 add_executable(ipc_tests ${TEST_SOURCES})
@@ -17,6 +18,7 @@ add_executable(ipc_tests ${TEST_SOURCES})
 target_link_libraries(ipc_tests
   PRIVATE
   ipc_pipe
+  ipc_shared_memory
   ipc_factory
   gtest_main
 )
