@@ -11,4 +11,9 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug
 
 cmake --Build build
 
+## Run tests
+
+cd build
+
+./tests/ipc_tests 
 

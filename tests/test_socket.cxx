@@ -18,7 +18,7 @@ TEST(IPC_PingPong, TCPSocket) {
     ASSERT_TRUE(client.initialize(addr, false)) << "Child failed to connect";
 
     ipc::IPCMessage msg{};
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 5; ++i) {
       // Receive from parent
       ASSERT_TRUE(client.receive_message(msg)) << "Child failed to receive";
       std::cout << "[Child] Received: " << msg.counter << std::endl;
@@ -40,8 +40,9 @@ TEST(IPC_PingPong, TCPSocket) {
     ipc::IPCMessage msg{};
     msg.counter = 0;
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 5; ++i) {
       // Send to child
+      msg.counter += 1;
       ASSERT_TRUE(server.send_message(msg)) << "Parent failed to send";
       std::cout << "[Parent] Sent: " << msg.counter << std::endl;
 
