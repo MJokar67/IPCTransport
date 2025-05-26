@@ -1,3 +1,7 @@
+#include <MsgQueueTransport.hpp>
+#include <SharedMemoryTransport.hpp>
+#include <SignalTransport.hpp>
+#include <TCPSocketTransport.hpp>
 #include <IPCTransportFactory.hpp>
 #include <PipeTransport.hpp>
 
