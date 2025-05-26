@@ -10,6 +10,8 @@ IPCTransportFactory::create_transport(IPCType type) {
     return std::make_unique<ipc::PipeTransport>();
   case IPCType::Socket:
     return std::make_unique<ipc::TCPSocketTransport>();
+  case IPCType::MessageQueue:
+    return std::make_unique<ipc::MsgQueueTransport>();
   }
   return std::unique_ptr<ipc::IIPCTransport>();
 }

@@ -12,4 +12,5 @@ target_link_libraries(ipc_factory
            ipc_pipe
            ipc_shared_memory
            ipc_socket
+           ipc_msgqueue
 )
