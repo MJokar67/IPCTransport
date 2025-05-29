@@ -14,7 +14,7 @@ TEST(IPC_PingPong, Pipe) {
   ASSERT_NE(pid, -1) << "fork failed";
 
   if (pid == 0) {
-    // Child process: receive -> increment -> send
+    // Child process: receive -> increment -> send -> cleanup (unlink)
     ipc::PipeTransport transport;
     bool init = transport.initialize(ipc_name, false);
     ASSERT_TRUE(init) << "Child failed to initialize PipeTransport";
@@ -33,10 +33,10 @@ TEST(IPC_PingPong, Pipe) {
       cout << "[Child] Sent: " << msg.counter << endl;
     }
 
-    transport.cleanup();
+    transport.cleanup(); // Child cleans up (unlinks)
     _exit(0);
   } else {
-    // Parent process: send -> receive -> send ...
+    // Parent process: send -> receive -> send ... -> wait
     ipc::PipeTransport transport;
     bool init = transport.initialize(ipc_name, true);
     ASSERT_TRUE(init) << "Parent failed to initialize PipeTransport";
@@ -48,7 +48,7 @@ TEST(IPC_PingPong, Pipe) {
     ASSERT_TRUE(transport.send_message(msg));
     cout << "[Parent] Sent: " << msg.counter << endl;
 
-    while (true) {
+    while (msg.counter < 10) {
       ASSERT_TRUE(transport.receive_message(msg));
       cout << "[Parent] Received: " << msg.counter << endl;
 
@@ -61,10 +61,10 @@ TEST(IPC_PingPong, Pipe) {
       cout << "[Parent] Sent: " << msg.counter << endl;
     }
 
+    transport.cleanup(); // Parent only closes fds
+
     int status = 0;
     waitpid(pid, &status, 0);
-
-    transport.cleanup();
 
     ASSERT_TRUE(WIFEXITED(status));
     ASSERT_EQ(WEXITSTATUS(status), 0);
