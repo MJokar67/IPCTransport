@@ -29,7 +29,7 @@ const std::string QUEUE_BASE_NAME {"/queue"};
 
 const int MAX_COUNT = 10;
 
-TEST(IPC_PingPong, SeparateQueuesFixed) {
+TEST(IPC_PingPong, MessageQueue) {
 
   // Cleanup
   mq_unlink((QUEUE_BASE_NAME + "_ctp").c_str());
