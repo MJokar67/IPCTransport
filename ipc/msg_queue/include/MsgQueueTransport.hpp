@@ -108,12 +108,16 @@ public:
   void cleanup() override;
 
 private:
-  /*! @brief The message queue descriptor. Initialized to (mqd_t)-1, an invalid
+  /*! @brief The send message queue descriptor. Initialized to (mqd_t)-1, an invalid
    * descriptor. */
-  mqd_t mq = (mqd_t)-1;
-
-  /*! @brief The name of the POSIX message queue. */
-  std::string queue_name;
+  mqd_t send_mq = (mqd_t)-1;
+  /*! @brief The recieve message queue descriptor. Initialized to (mqd_t)-1, an invalid
+   * descriptor. */
+  mqd_t recieve_mq = (mqd_t)-1;
+  /* @param send_name A unique name for the send message queue (e.g.,*/
+  std::string send_name;
+  /* @param recieve_name A unique name for the recieve message queue (e.g.,*/
+  std::string recieve_name;
 };
 } // namespace ipc
 #endif // MSG_QUEUE_TRANSPORT_HPP

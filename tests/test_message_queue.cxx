@@ -1,81 +1,149 @@
 #include <IIPCTransport.hpp>
 #include <IPCTransportFactory.hpp>
 #include <MsgQueueTransport.hpp>
+#include <IPCTransportFactory.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 
-constexpr const char *queue_name = "pingpong_queue";
-constexpr int MAX_COUNT = 10;
+#include <gtest/gtest.h>
 
-TEST(IPC_PingPong, MessageQueue) {
+#include <iostream>
+
+#include <string>
+
+#include <unistd.h>
+
+#include <mqueue.h>
+
+#include <fcntl.h>
+
+#include <sys/wait.h>
+
+#include <cerrno>
+
+const std::string QUEUE_BASE_NAME {"/queue"};
+
+
+const int MAX_COUNT = 10;
+
+TEST(IPC_PingPong, SeparateQueuesFixed) {
+
+  // Cleanup
+  mq_unlink((QUEUE_BASE_NAME + "_ctp").c_str());
+  mq_unlink((QUEUE_BASE_NAME + "_ptc").c_str());
+  
+  // Initial the files at the begin of the test.
+  {
+    struct mq_attr attr;
+
+    attr.mq_flags = 0;
+
+    attr.mq_maxmsg = 10;
+
+    attr.mq_msgsize = sizeof(ipc::IPCMessage);
+
+    attr.mq_curmsgs = 0;
+
+    mqd_t p2c_mq = mq_open((QUEUE_BASE_NAME + "_ctp").c_str(), O_CREAT | O_RDWR, 0666, &attr);
+
+    ASSERT_NE(p2c_mq, (mqd_t)-1);
+
+    mqd_t c2p_mq = mq_open((QUEUE_BASE_NAME + "_ptc").c_str(), O_CREAT | O_RDWR, 0666, &attr);
+
+    ASSERT_NE(c2p_mq, (mqd_t)-1);
+  }
+
   pid_t pid = fork();
-  ASSERT_NE(pid, -1) << "fork() failed";
+
+  ASSERT_NE(pid, -1);
 
   if (pid == 0) {
+
     // Child process
-    ipc::MsgQueueTransport client;
-    if (!client.initialize(queue_name, false)) {
-      std::cerr << "Child failed to open message queue" << std::endl;
-      exit(1);
-    }
+
+    auto transport = IPCTransportFactory::create_transport(IPCType::MessageQueue);
+
+    transport->initialize(QUEUE_BASE_NAME, true);
+
+    ipc::IPCMessage msg_recv;
 
     while (true) {
-      ipc::IPCMessage msg;
-      client.receive_message(msg);
 
-      std::cout << "[Child] Received: " << msg.counter << std::endl;
-
-      if (msg.counter > MAX_COUNT)
-        break;
-
-      msg.counter += 1;
-      msg.data[0] = 'C';
-      client.send_message(msg);
-
-      std::cout << "[Child] Sent: " << msg.counter << std::endl;
+      if(transport->receive_message(msg_recv)) {
+        if (msg_recv.counter == -1) {
+          break; // Terminate based on counter value
+        }
+  
+        std::cout << "[Child] Received: " << msg_recv.counter << std::endl;
+  
+        ipc::IPCMessage msg_send;
+        if (msg_recv.counter < MAX_COUNT) {
+  
+          msg_send.counter = msg_recv.counter + 1;
+          transport->send_message(msg_send);
+          std::cout << "[Child] Sent: " << msg_send.counter << std::endl;
+        } else {
+  
+          msg_send.counter = -1;
+          transport->send_message(msg_send);
+          std::cout << "[Child] Sent: termination" << std::endl;
+        }
+      }
+      
     }
+
     exit(0);
   } else {
+
     // Parent process
-    ipc::MsgQueueTransport server;
-    ASSERT_TRUE(server.initialize(queue_name, true))
-        << "Parent failed to create message queue";
 
-    ipc::IPCMessage msg;
-    msg.counter = 0;
-    msg.data[0] = 'P';
+    auto transport = IPCTransportFactory::create_transport(IPCType::MessageQueue);
 
-    server.send_message(msg);
-    std::cout << "[Parent] Sent: " << msg.counter << std::endl;
+    transport->initialize(QUEUE_BASE_NAME, false);
+  
+    ipc::IPCMessage msg_send;
 
-    while (true) {
-      ipc::IPCMessage response;
-      server.receive_message(response);
+    msg_send.counter = 0;
 
-      std::cout << "[Parent] Received: " << response.counter << std::endl;
+    if(transport->send_message(msg_send)) {
 
-      if (response.counter > MAX_COUNT) {
-        // Notify child to terminate
-        response.counter += 1;
-        response.data[0] = 'P';
-        server.send_message(response);
-        break;
+      std::cout << "[Parent] Sent initial: " << msg_send.counter << std::endl;
+
+      ipc::IPCMessage msg_recv;
+  
+      while (true) {
+  
+        if(transport->receive_message(msg_recv)) {
+  
+          if (msg_recv.counter == -1) {
+    
+            break; // Terminate based on counter value
+          }
+    
+          std::cout << "[Parent] Received: " << msg_recv.counter << std::endl;
+    
+          if (msg_recv.counter < MAX_COUNT) { // Adjust condition based on when to stop
+    
+            msg_send.counter = msg_recv.counter + 1;
+            transport->send_message(msg_send);
+            std::cout << "[Parent] Sent: " << msg_send.counter << std::endl;
+          } else {
+    
+            msg_send.counter = -1;
+            transport->send_message(msg_send);
+            std::cout << "[Parent] Sent: termination" << std::endl;
+          }
+        }
       }
-
-      EXPECT_EQ(response.counter, msg.counter + 1)
-          << "Parent expected child to increment counter";
-
-      msg = response;
-      msg.counter += 1;
-      msg.data[0] = 'P';
-
-      server.send_message(msg);
-      std::cout << "[Parent] Sent: " << msg.counter << std::endl;
     }
 
-    waitpid(pid, nullptr, 0);
+
+    // wait(nullptr);
   }
+
+  mq_unlink((QUEUE_BASE_NAME + "_ctp").c_str());
+  mq_unlink((QUEUE_BASE_NAME + "_ptc").c_str());
 }

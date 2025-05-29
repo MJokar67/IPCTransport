@@ -10,7 +10,7 @@ set(TEST_SOURCES
   test_pipe.cxx
   test_shared_memory.cxx
   test_socket.cxx
-  # test_message_queue.cxx
+  test_message_queue.cxx
   # test_signal.cxx
 )
 
