@@ -37,6 +37,9 @@ struct IPCMessageSHM : IPCMessage {
 
   /*! @brief Default constructor for IPCMessageSHM. */
   IPCMessageSHM() = default;
+
+  /*! @brief Add a termination flag. */
+  volatile bool terminate = false;
 };
 
 /*!
@@ -128,7 +131,7 @@ public:
    * @return A pointer to the IPCMessageSHM object in shared memory, or nullptr
    * if the shared memory has not been successfully initialized.
    */
-  IPCMessage *get_shared_message() const;
+  IPCMessageSHM *get_shared_message() const;
 
 private:
   /*! @brief The name of the POSIX shared memory object. */

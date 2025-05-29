@@ -11,7 +11,7 @@ ipc::SharedMemoryTransport::SharedMemoryTransport() {}
 ipc::SharedMemoryTransport::~SharedMemoryTransport() { cleanup(); }
 
 bool ipc::SharedMemoryTransport::initialize(const std::string &name,
-                                            bool create) {
+  bool create) {
   shm_name = "/" + name;
 
   if (create) {
@@ -21,7 +21,7 @@ bool ipc::SharedMemoryTransport::initialize(const std::string &name,
       return false;
     }
 
-    if (ftruncate(shm_fd, sizeof(IPCMessage)) == -1) {
+    if (ftruncate(shm_fd, sizeof(IPCMessageSHM)) == -1) {
       perror("ftruncate");
       return false;
     }
@@ -35,8 +35,8 @@ bool ipc::SharedMemoryTransport::initialize(const std::string &name,
     }
   }
 
-  void *ptr = mmap(nullptr, sizeof(IPCMessage), PROT_READ | PROT_WRITE,
-                   MAP_SHARED, shm_fd, 0);
+  void *ptr = mmap(nullptr, sizeof(IPCMessageSHM), PROT_READ | PROT_WRITE,
+  MAP_SHARED, shm_fd, 0);
   if (ptr == MAP_FAILED) {
     perror("mmap");
     return false;
@@ -117,6 +117,6 @@ void ipc::SharedMemoryTransport::cleanup() {
   }
 }
 
-ipc::IPCMessage *ipc::SharedMemoryTransport::get_shared_message() const {
+ipc::IPCMessageSHM *ipc::SharedMemoryTransport::get_shared_message() const {
   return shared_msg;
 }
